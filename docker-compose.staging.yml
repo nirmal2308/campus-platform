@@ -1,0 +1,11 @@
+# Isolated staging environment: own network, own volume, never touches production data.
+services:
+  campus:
+    image: campus-platform:${IMAGE_TAG:?set IMAGE_TAG}
+    environment:
+      APP_VERSION: ${APP_VERSION:?set APP_VERSION}
+      CAMPUS_SYNC_TOKEN: ${CAMPUS_SYNC_TOKEN:-}
+    ports: ["18000:8000"]
+    volumes: ["staging-data:/data"]
+volumes:
+  staging-data:

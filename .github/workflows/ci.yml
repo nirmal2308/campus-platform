@@ -1,0 +1,77 @@
+name: campus-platform-ci
+on:
+  push:
+    branches: [main, "feature/**", "defect/**"]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+env:
+  IMAGE: campus-platform
+
+jobs:
+  test-and-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Unit tests
+        run: python -m pytest tests/unit -m unit -q
+      - name: Integration tests (isolated SQLite per test)
+        run: python -m pytest tests/integration -m integration -q
+      - name: Regression tests
+        run: python -m pytest tests/regression -m regression -q
+      - name: Release gate (coverage, SAST, secret scan)
+        run: ./scripts/gate.sh
+      - name: Dependency vulnerability audit
+        run: pip install pip-audit && pip-audit -r requirements.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: test-evidence, path: .coverage }
+
+  build-image:
+    needs: test-and-gate            # quality gate: never builds after a failed check
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        run: echo "tag=${GITHUB_REF_NAME//\//-}-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - name: Build container image
+        run: docker build --build-arg APP_VERSION=${{ steps.meta.outputs.tag }} -t $IMAGE:${{ steps.meta.outputs.tag }} .
+      - name: Record image digest
+        run: docker image inspect $IMAGE:${{ steps.meta.outputs.tag }} --format '{{.Id}}' | tee image-id.txt
+      - run: docker save $IMAGE:${{ steps.meta.outputs.tag }} -o image.tar
+      - uses: actions/upload-artifact@v4
+        with: { name: image-${{ steps.meta.outputs.tag }}, path: "image.tar\nimage-id.txt" }
+
+  deploy-staging:
+    needs: build-image
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/download-artifact@v4
+        with: { name: image-${{ needs.build-image.outputs.tag }} }
+      - run: docker load -i image.tar
+      - name: Deploy to isolated staging
+        env:
+          IMAGE_TAG: ${{ needs.build-image.outputs.tag }}
+          APP_VERSION: ${{ needs.build-image.outputs.tag }}
+          CAMPUS_SYNC_TOKEN: ${{ secrets.CAMPUS_SYNC_TOKEN }}   # secret never committed
+        run: docker compose -f docker-compose.staging.yml up -d
+      - name: Post-deployment smoke checks
+        run: |
+          for i in $(seq 1 15); do curl -fs localhost:18000/health && break || sleep 2; done
+          python scripts/smoke.py http://localhost:18000 ${{ needs.build-image.outputs.tag }}
+      - name: Roll back on failure
+        if: failure()
+        run: docker compose -f docker-compose.staging.yml down -v
