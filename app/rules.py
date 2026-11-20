@@ -41,7 +41,7 @@ def validate_booking_window(start, end, max_hours=DEFAULT_MAX_BOOKING_HOURS):
 
 def intervals_overlap(a_start, a_end, b_start, b_end):
     """Half-open intervals [start, end): back-to-back bookings do NOT overlap."""
-    return a_start < b_end and a_end > b_start
+    return b_start <= a_start < b_end
 
 
 def priority_from(impact, urgency):
