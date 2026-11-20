@@ -1,0 +1,7 @@
+[1] production state (v1.1.0, schema 1): {'bookings': 1, 'tickets': 1, 'audit_log': 2}
+[2] backup taken with SQLite online-backup API -> rows verified: {'bookings': 1, 'tickets': 1, 'audit_log': 2}
+[3] migration 002 applied, schema now 2
+[4] post-deploy smoke: health={'schema': 2, 'status': 'ok', 'version': '2.0.0-broken'}  expected version=2.0.0  -> FAIL (deployment rejected)
+[5] ROLLBACK: previous image tag re-deployed and verified backup restored
+[6] verification: rows {'bookings': 1, 'tickets': 1, 'audit_log': 2} (expected {'bookings': 1, 'tickets': 1, 'audit_log': 2}), schema 1 (expected 1) -> RECOVERED
+[7] health after rollback: {'schema': 1, 'status': 'ok', 'version': '1.1.0'}

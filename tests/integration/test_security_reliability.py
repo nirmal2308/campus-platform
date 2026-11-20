@@ -60,6 +60,27 @@ def test_s07_double_submit_of_same_booking_stores_one_row(make_app):
     assert len(rows(app, "SELECT * FROM bookings")) == 1
 
 
+def test_s08_external_outage_keeps_local_record_and_retry_does_not_duplicate(make_app):
+    calls = {"fail": True, "sent": []}
+
+    def flaky(entity, eid, key):
+        if calls["fail"]:
+            raise ConnectionError("tracker unavailable")
+        calls["sent"].append(key)
+        return f"EXT-{eid}"
+
+    app = make_app(2, transport=flaky)
+    api = Client(app.test_client())
+    tid = api.post("/api/tickets", "u-stu", TICKET).json["id"]
+    assert api.post("/api/sync/run", "u-fm").json == {"delivered": 0, "failed": 1}
+    t = rows(app, "SELECT status, external_issue_id FROM tickets WHERE id=?", (tid,))[0]
+    assert t == {"status": "new", "external_issue_id": None}  # local data intact
+    calls["fail"] = False
+    assert api.post("/api/sync/run", "u-fm").json == {"delivered": 1, "failed": 0}
+    api.post("/api/sync/run", "u-fm")  # repeated run
+    assert calls["sent"] == [f"ticket:{tid}"]
+    assert rows(app, "SELECT external_issue_id FROM tickets WHERE id=?", (tid,))[0]["external_issue_id"] == f"EXT-{tid}"
+
 
 def test_s09_audit_log_readable_only_by_admin(api):
     api.post("/api/tickets", "u-stu", TICKET)

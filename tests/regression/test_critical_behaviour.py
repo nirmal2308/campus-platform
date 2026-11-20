@@ -8,7 +8,7 @@ from tests.conftest import Client, rows
 pytestmark = pytest.mark.regression
 
 
-@pytest.fixture(params=[1], ids=["schema1"])
+@pytest.fixture(params=[1, 2], ids=["schema1", "schema2"])
 def rapi(request, make_app):
     app = make_app(request.param)
     c = Client(app.test_client())
