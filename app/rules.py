@@ -14,7 +14,7 @@ TICKET_TRANSITIONS = {
     "closed": set(),
 }
 STAFF_ROLES = {"admin", "facility_manager", "maintenance_technician"}
-APPROVER_ROLES = {"admin", "facility_manager", "department_approver", "faculty"}
+APPROVER_ROLES = {"admin", "facility_manager", "department_approver"}
 
 
 class RuleError(ValueError):
