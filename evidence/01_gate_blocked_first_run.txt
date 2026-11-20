@@ -1,0 +1,18 @@
+$ ./scripts/gate.sh        # first run on commit dc06810
+=== GATE 1: unit + integration + regression tests, coverage >= 90% ===
+app/__init__.py       2      0   100%
+app/api.py          230     40    83%   50-52, 57, 62, 67, 83, 86, 95, 102, 105-106, 123-125, 134, 140, 143, 146, 152, 158, 160, 184, 196-197, 205, 208, 217, 224, 242, 247, 253-254, 269, 276-281
+app/db.py            31      4    87%   30, 34-36
+app/rules.py         46      1    98%   57
+app/seed.py           7      0   100%
+app/sync.py          30     25    17%   12-14, 18-23, 27-46
+TOTAL               346     70    80%
+69 passed in 0.66s
+GATE 1 FAILED
+=== GATE 2: static security scan (bandit, medium+ severity) ===
+>> Issue: [B104:hardcoded_bind_all_interfaces] Possible binding to all interfaces.
+   Severity: Medium   Confidence: Medium
+   Location: app/__main__.py:12:17
+GATE 2 FAILED
+=== GATE 3: no secrets committed ===
+>>> RELEASE BLOCKED
