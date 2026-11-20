@@ -1,4 +1,6 @@
-* f749256 (HEAD -> main) docs: README, authorization-matrix probe and evidence logs
+* cf6ff04 (HEAD -> main, tag: v2.0.1) ci: migration/rollback rehearsal in the gate, pre-upgrade backup step, pins aligned to tested versions
+* c03fd54 docs(evidence): final git history snapshot
+* f749256 docs: README, authorization-matrix probe and evidence logs
 *   0ae6b24 (tag: v2.0.0) Merge release/2.0.0: campus policies, v2 booking API, migration 002
 |\  
 | * e25f3c2 (release/2.0.0) docs(evidence): v2.0.0 gate, in-place upgrade and rollback rehearsal logs
@@ -28,3 +30,4 @@ v1.0.0          Baseline release 1.0.0 - all gates green
 v1.0.1          Fix start-up migration race
 v1.1.0          Release 1.1.0 - defects D1-D3 detected by tests and reverted before release
 v2.0.0          Release 2.0.0 - Q6 changed requirement
+v2.0.1          Pipeline hardening for the migration; application code unchanged from v2.0.0
