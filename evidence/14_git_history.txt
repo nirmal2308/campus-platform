@@ -1,4 +1,5 @@
-*   0ae6b24 (HEAD -> main, tag: v2.0.0) Merge release/2.0.0: campus policies, v2 booking API, migration 002
+* f749256 (HEAD -> main) docs: README, authorization-matrix probe and evidence logs
+*   0ae6b24 (tag: v2.0.0) Merge release/2.0.0: campus policies, v2 booking API, migration 002
 |\  
 | * e25f3c2 (release/2.0.0) docs(evidence): v2.0.0 gate, in-place upgrade and rollback rehearsal logs
 | * bd17dcc test(release-2.0.0): migration, v2 API, campus policy, sync-outage tests; regression suite now runs on schema 1 and 2
