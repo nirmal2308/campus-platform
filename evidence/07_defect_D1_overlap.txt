@@ -1,0 +1,19 @@
+$ pytest   # defect D1 introduced in commit fee938d: 'refactor(rules): simplify overlap check'
+FAILED tests/integration/test_api_integration.py::test_i02_overlapping_booking_rejected_and_not_stored
+FAILED tests/unit/test_rules.py::test_u07_new_booking_starting_earlier_but_ending_inside_overlaps
+FAILED tests/unit/test_rules.py::test_u08_new_booking_fully_containing_existing_overlaps
+3 failed, 79 passed in 1.39s
+
+--- detail of one failing test ---
+tests/integration/test_api_integration.py:28: in test_i02_overlapping_booking_rejected_and_not_stored
+    assert r.status_code == 409
+E   assert 201 == 409
+E    +  where 201 = <WrapperTestResponse streamed [201 CREATED]>.status_code
+tests/unit/test_rules.py:45: in test_u07_new_booking_starting_earlier_but_ending_inside_overlaps
+    assert rules.intervals_overlap(T0, T0 + timedelta(minutes=90), T0 + timedelta(hours=1), T0 + timedelta(hours=3))
+E   assert False
+E    +  where False = <function intervals_overlap at 0x7f51435cc360>(datetime.datetime(2026, 12, 1, 9, 0), (datetime.datetime(2026, 12, 1, 9, 0) + datetime.timedelta(seconds=5400)), (datetime.datetime(2026, 12, 1, 9, 0) + datetime.timedelta(seconds=3600)), (datetime.datetime(2026, 12, 1, 9, 0) + datetime.timedelta(seconds=10800)))
+E    +    where <function intervals_overlap at 0x7f51435cc360> = rules.intervals_overlap
+E    +    and   datetime.timedelta(seconds=5400) = timedelta(minutes=90)
+E    +    and   datetime.timedelta(seconds=3600) = timedelta(hours=1)
+E    +    and   datetime.timedelta(seconds=10800) = timedelta(hours=3)

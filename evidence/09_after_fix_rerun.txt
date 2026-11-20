@@ -1,0 +1,11 @@
+$ pytest   # after reverting D3, D2 and D1 on defect/rc-1.1.0
+82 passed in 1.45s
+
+$ ./scripts/gate.sh
+=== GATE 1: unit + integration + regression tests, coverage >= 90% ===
+================================ tests coverage ================================
+TOTAL                358     29    92%
+82 passed in 1.82s
+=== GATE 2: static security scan (bandit, medium+ severity) ===
+=== GATE 3: no secrets committed ===
+>>> ALL GATES PASSED - release may proceed to build

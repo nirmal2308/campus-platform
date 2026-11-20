@@ -1,0 +1,7 @@
+$ pytest   # defect D2 introduced in commit 6e02c85 (D1 still present)
+FAILED tests/integration/test_api_integration.py::test_i02_overlapping_booking_rejected_and_not_stored
+FAILED tests/integration/test_api_integration.py::test_i05_sensor_boundary_creates_ticket_and_duplicate_event_is_ignored
+FAILED tests/unit/test_rules.py::test_u07_new_booking_starting_earlier_but_ending_inside_overlaps
+FAILED tests/unit/test_rules.py::test_u08_new_booking_fully_containing_existing_overlaps
+FAILED tests/unit/test_rules.py::test_u13_sensor_value_equal_to_threshold_raises_alert
+5 failed, 77 passed in 1.43s
