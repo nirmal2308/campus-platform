@@ -1,0 +1,8 @@
+                        anonymous   student   faculty technicia dept appr facility      admin sensor gw
+GET restricted facility       401       403       403       200       200       200       200       403
+GET other user's ticket       401       403       403       200       200       200       200       403
+POST approve booking          401       403       403       403       200       200       200       403
+POST ticket transition        401       403       403       200       403       200       200       403
+POST sensor event             401       403       403       201       403       403       201       201
+GET audit log                 401       403       403       403       403       403       200       403
+POST sync run                 401       403       403       403       403       200       200       403

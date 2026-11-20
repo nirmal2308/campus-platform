@@ -1,0 +1,29 @@
+*   0ae6b24 (HEAD -> main, tag: v2.0.0) Merge release/2.0.0: campus policies, v2 booking API, migration 002
+|\  
+| * e25f3c2 (release/2.0.0) docs(evidence): v2.0.0 gate, in-place upgrade and rollback rehearsal logs
+| * bd17dcc test(release-2.0.0): migration, v2 API, campus policy, sync-outage tests; regression suite now runs on schema 1 and 2
+| * b73aa94 feat(release-2.0.0): campus booking-duration and sensor-threshold policies, sync outbox, additive migration 002 + rollback script
+|/  
+*   02bf6b4 (tag: v1.1.0) Merge defect/rc-1.1.0: release candidate corrected (D1-D3 reverted)
+|\  
+| * 47c7f5f (defect/rc-1.1.0) docs(evidence): re-run after reverting D1-D3 - all gates green
+| * 0f81600 Revert "refactor(rules): simplify overlap check"
+| * 585be9d Revert "fix(sensor): avoid false alarms at exact threshold"
+| * d33aad8 docs(evidence): defect, blocked-gate and recovery logs
+| * d17585e Revert "feat(approval): let faculty approve lab requests"
+| * 1264b19 feat(approval): let faculty approve lab requests
+| * 6e02c85 fix(sensor): avoid false alarms at exact threshold
+| * fee938d refactor(rules): simplify overlap check
+|/  
+* de101c0 test(load): bounded load + race experiment, evidence logs for v1.0.1
+* fdfec1f (tag: v1.0.1) fix(startup): serialise migration with file lock + gunicorn --preload (deploy failure on v1.0.0); add R07
+* 58c618c (tag: v1.0.0) test: error-path and outbox unit tests; fix: dev server binds to localhost (bandit B104)
+* dc06810 ci: add GitHub Actions pipeline, Jenkinsfile, Dockerfile, staging compose, release gate
+* a7ca208 test: unit (U), integration (I), regression (R) and security (S) suites
+* cd0b3ad feat(api): REST API v1, SQLite layer, migration 001, audit log, idempotent ticket creation
+* 3f21257 feat(rules): booking window/overlap, priority matrix, SLA, sensor threshold, ticket state machine
+* 4b424a9 chore: project skeleton, pinned requirements, .env.example (no secrets)
+v1.0.0          Baseline release 1.0.0 - all gates green
+v1.0.1          Fix start-up migration race
+v1.1.0          Release 1.1.0 - defects D1-D3 detected by tests and reverted before release
+v2.0.0          Release 2.0.0 - Q6 changed requirement
