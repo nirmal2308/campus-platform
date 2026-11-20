@@ -54,6 +54,13 @@ def test_e08_unauthenticated_calls_rejected_on_every_write_endpoint(api):
         assert getattr(api, method)(url).status_code == 401, url
 
 
+def test_e09_sync_run_forbidden_for_students_and_default_transport_delivers(make_app):
+    app = make_app(2)
+    c = Client(app.test_client())
+    assert c.post("/api/sync/run", "u-stu").status_code == 403
+    c.post("/api/tickets", "u-stu", {"title": "t", "description": "d", "impact": 2, "urgency": 2})
+    assert c.post("/api/sync/run", "u-fm").json == {"delivered": 1, "failed": 0}
+
 
 def test_e10_sync_transport_without_url_vs_with_url(monkeypatch):
     from app import sync
