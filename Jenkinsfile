@@ -4,7 +4,7 @@ pipeline {
   environment { IMAGE_TAG = "${env.BRANCH_NAME.replace('/', '-')}-${env.GIT_COMMIT.take(7)}" }
   stages {
     stage('Install')  { steps { sh 'python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements-dev.txt' } }
-    stage('Gate')     { steps { sh '. .venv/bin/activate && ./scripts/gate.sh' } }
+    stage('Gate')     { steps { sh '. .venv/bin/activate && ./scripts/gate.sh && python scripts/rollback_rehearsal.py' } }
     stage('Build')    { steps { sh 'docker build --build-arg APP_VERSION=$IMAGE_TAG -t campus-platform:$IMAGE_TAG .' } }
     stage('Deploy staging') {
       when { anyOf { branch 'main'; buildingTag() } }

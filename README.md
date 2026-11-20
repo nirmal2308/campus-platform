@@ -29,5 +29,5 @@ python scripts/smoke.py http://localhost:18000 v2.0.0-$(git rev-parse --short HE
 `scripts/` gate, smoke, load, rollback, authz probe - `.github/workflows/ci.yml` and `Jenkinsfile` pipelines - `evidence/` logs referenced by the report.
 
 ## Releases (git tags)
-v1.0.0 baseline - v1.0.1 start-up race fix - v1.1.0 after defect drill (D1-D3 reverted) - v2.0.0 campus policies + migration 002.
+v1.0.0 baseline - v1.0.1 start-up race fix - v1.1.0 after defect drill (D1-D3 reverted) - v2.0.0 campus policies + migration 002 - v2.0.1 pipeline hardening for the migration (rehearsal in the gate, pre-upgrade backup).
 Secrets are never committed: copy `.env.example` to `.env` locally; CI uses repository secrets.

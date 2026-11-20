@@ -27,6 +27,8 @@ jobs:
         run: python -m pytest tests/regression -m regression -q
       - name: Release gate (coverage, SAST, secret scan)
         run: ./scripts/gate.sh
+      - name: Migration and rollback rehearsal (release 2.0.0 requirement)
+        run: python scripts/rollback_rehearsal.py
       - name: Dependency vulnerability audit
         run: pip install pip-audit && pip-audit -r requirements.txt
       - uses: actions/upload-artifact@v4
@@ -62,6 +64,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { name: image-${{ needs.build-image.outputs.tag }} }
       - run: docker load -i image.tar
+      - name: Back up staging data before the upgrade (needed for rollback)
+        run: |
+          if docker volume inspect campus-platform_staging-data >/dev/null 2>&1; then
+            docker run --rm -v campus-platform_staging-data:/data -v "$PWD":/backup alpine cp /data/campus.db /backup/pre-upgrade.db
+          else echo "no existing staging data"; fi
       - name: Deploy to isolated staging
         env:
           IMAGE_TAG: ${{ needs.build-image.outputs.tag }}
@@ -72,6 +79,8 @@ jobs:
         run: |
           for i in $(seq 1 15); do curl -fs localhost:18000/health && break || sleep 2; done
           python scripts/smoke.py http://localhost:18000 ${{ needs.build-image.outputs.tag }}
-      - name: Roll back on failure
+      - name: Roll back on failure (remove failed stack; restore pre-upgrade data if it exists)
         if: failure()
-        run: docker compose -f docker-compose.staging.yml down -v
+        run: |
+          docker compose -f docker-compose.staging.yml down -v
+          if [ -f pre-upgrade.db ]; then echo "pre-upgrade.db retained as the recovery copy"; fi

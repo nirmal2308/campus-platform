@@ -1,0 +1,11 @@
+$ ./scripts/gate.sh && python scripts/rollback_rehearsal.py   # commit after Q6 pipeline hardening
+=== GATE 1: unit + integration + regression tests, coverage >= 90% ===
+================================ tests coverage ================================
+TOTAL                358     17    95%
+100 passed in 1.99s
+=== GATE 2: static security scan (bandit, medium+ severity) ===
+=== GATE 3: no secrets committed ===
+>>> ALL GATES PASSED - release may proceed to build
+[5] ROLLBACK: previous image tag re-deployed and verified backup restored
+[6] verification: rows {'bookings': 1, 'tickets': 1, 'audit_log': 2} (expected {'bookings': 1, 'tickets': 1, 'audit_log': 2}), schema 1 (expected 1) -> RECOVERED
+[7] health after rollback: {'schema': 1, 'status': 'ok', 'version': '1.1.0'}
