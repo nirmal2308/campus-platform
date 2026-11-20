@@ -1,0 +1,26 @@
+### Step 1: production runs v1.1.0 (schema 1) and holds real data
+{"schema":1,"status":"ok","version":"v1.1.0"}
+
+{"end":"2026-12-05T11:00:00","id":1,"start":"2026-12-05T09:00:00","status":"confirmed"}
+{"id":1,"priority":3,"sla_deadline":"2026-11-21T01:10:11.873821","status":"new"}
+rows before upgrade: {'bookings': 1, 'tickets': 1, 'audit_log': 2}
+
+### Step 2: deploy v2.0.0 against the SAME database (bootstrap applies migration 002 at start-up)
+{"schema":2,"status":"ok","version":"v2.0.0"}
+
+[PASS] health endpoint returns ok
+[PASS] deployed version == v2.0.0
+[PASS] authenticated catalogue read
+[PASS] restricted facility hidden from student
+[PASS] anonymous request rejected
+SMOKE PASSED
+old booking still readable through API as its owner:
+{'id': 1, 'start_time': '2026-12-05T09:00:00', 'end_time': '2026-12-05T11:00:00', 'status': 'confirmed', 'calendar_sync': 'not_required'}
+legacy v1 endpoint still works:
+POST /api/bookings -> 201
+new v2 endpoint, lab limit 3h (3h01m must be rejected):
+POST /api/v2/bookings lab 3h01 -> 422
+{"delivered":1,"failed":0}
+  <- outbox processed
+rows after upgrade: {'bookings': 2, 'tickets': 1, 'audit_log': 3} schema_version: 2
+original booking row: (1, '2026-12-05T09:00:00', '2026-12-05T11:00:00', 'confirmed')
