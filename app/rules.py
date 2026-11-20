@@ -69,7 +69,7 @@ def sensor_alert(kind, value, thresholds=None):
         raise RuleError(f"unknown sensor kind: {kind}")
     if not isinstance(value, (int, float)) or isinstance(value, bool):
         raise RuleError("sensor value must be numeric")
-    return value >= t[kind]  # boundary value triggers the alert
+    return value > t[kind]
 
 
 def can_transition(current, target):
