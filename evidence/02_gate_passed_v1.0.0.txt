@@ -1,0 +1,20 @@
+$ ./scripts/gate.sh        # commit 58c618c (tag v1.0.0)
+=== GATE 1: unit + integration + regression tests, coverage >= 90% ===
+........................................................................ [ 88%]
+.........                                                                [100%]
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.3-final-0 ________________
+Name              Stmts   Miss  Cover   Missing
+-----------------------------------------------
+app/__init__.py       2      0   100%
+app/api.py          230     12    95%   50-52, 57, 62, 123-125, 146, 279-281
+app/db.py            31      4    87%   30, 34-36
+app/rules.py         46      1    98%   57
+app/seed.py           7      0   100%
+app/sync.py          30      0   100%
+-----------------------------------------------
+TOTAL               346     17    95%
+81 passed in 0.73s
+=== GATE 2: static security scan (bandit, medium+ severity) ===
+=== GATE 3: no secrets committed ===
+>>> ALL GATES PASSED - release may proceed to build

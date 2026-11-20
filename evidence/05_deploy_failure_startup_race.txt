@@ -1,0 +1,16 @@
+$ gunicorn -w 2 -b 127.0.0.1:18000 app.__main__:app     # deployment of v1.0.0-58c618c (all gates were green)
+[2026-11-20 01:07:40 +0000] [200] [ERROR] Reason: Worker failed to boot.
+[2026-11-20 01:07:40 +0000] [200] [ERROR] Shutting down: Master
+[2026-11-20 01:07:40 +0000] [200] [ERROR] Worker (pid:203) exited with code 3.
+[2026-11-20 01:07:40 +0000] [200] [INFO] Starting gunicorn 27.0.1
+[2026-11-20 01:07:40 +0000] [202] [INFO] Booting worker with pid: 202
+[2026-11-20 01:07:40 +0000] [203] [ERROR] Exception in worker process
+[2026-11-20 01:07:40 +0000] [203] [INFO] Booting worker with pid: 203
+sqlite3.OperationalError: table users already exists
+$ python scripts/smoke.py http://127.0.0.1:18000 v1.0.0-58c618c
+urllib.error.URLError: <urlopen error [Errno 111] Connection refused>
+exit code: 1   -> DEPLOYMENT FAILED, smoke gate blocks promotion
+
+# Reproduction without the fix: 6 workers migrating the same empty database at once
+OLD unlocked startup -> exit codes: 1, 1, 1, 1, 0, 1   (5 of 6 crashed: "sqlite3.OperationalError: table users already exists")
+# After the fix (file lock + gunicorn --preload) test R07 passes: all 6 exit 0, schema_version has exactly 1 row.
