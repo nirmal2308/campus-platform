@@ -1,4 +1,6 @@
+```yaml
 name: campus-platform-ci
+
 on:
   push:
     branches: [main, "feature/**", "defect/**"]
@@ -6,81 +8,190 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 env:
   IMAGE: campus-platform
 
 jobs:
   test-and-gate:
+    name: Test and Quality Gate
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
+
       - uses: actions/setup-python@v5
-        with: { python-version: "3.12", cache: pip }
+        with:
+          python-version: "3.12"
+          cache: pip
+
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
+
       - name: Unit tests
         run: python -m pytest tests/unit -m unit -q
+
       - name: Integration tests (isolated SQLite per test)
         run: python -m pytest tests/integration -m integration -q
+
       - name: Regression tests
         run: python -m pytest tests/regression -m regression -q
+
       - name: Release gate (coverage, SAST, secret scan)
         run: ./scripts/gate.sh
+
       - name: Migration and rollback rehearsal (release 2.0.0 requirement)
         run: python scripts/rollback_rehearsal.py
+
       - name: Dependency vulnerability audit
-        run: pip install pip-audit && pip-audit -r requirements.txt
-      - uses: actions/upload-artifact@v4
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt
+
+      - name: Upload test evidence
+        uses: actions/upload-artifact@v4
         if: always()
-        with: { name: test-evidence, path: .coverage }
+        with:
+          name: test-evidence
+          path: .coverage
+          if-no-files-found: ignore
 
   build-image:
-    needs: test-and-gate            # quality gate: never builds after a failed check
+    name: Build Container Image
+    needs: test-and-gate
     runs-on: ubuntu-latest
+
     outputs:
       tag: ${{ steps.meta.outputs.tag }}
+
     steps:
       - uses: actions/checkout@v4
-      - id: meta
-        run: echo "tag=${GITHUB_REF_NAME//\//-}-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate image tag
+        id: meta
+        run: |
+          TAG=$(echo "${GITHUB_REF_NAME//\//-}-${GITHUB_SHA::7}" | tr '[:upper:]' '[:lower:]')
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
       - name: Build container image
-        run: docker build --build-arg APP_VERSION=${{ steps.meta.outputs.tag }} -t $IMAGE:${{ steps.meta.outputs.tag }} .
+        env:
+          IMAGE_TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          docker build \
+            --build-arg APP_VERSION="$IMAGE_TAG" \
+            -t "$IMAGE:$IMAGE_TAG" .
+
       - name: Record image digest
-        run: docker image inspect $IMAGE:${{ steps.meta.outputs.tag }} --format '{{.Id}}' | tee image-id.txt
-      - run: docker save $IMAGE:${{ steps.meta.outputs.tag }} -o image.tar
-      - uses: actions/upload-artifact@v4
-        with: { name: image-${{ steps.meta.outputs.tag }}, path: "image.tar\nimage-id.txt" }
+        env:
+          IMAGE_TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          docker image inspect "$IMAGE:$IMAGE_TAG" --format '{{.Id}}' | tee image-id.txt
+
+      - name: Save container image
+        env:
+          IMAGE_TAG: ${{ steps.meta.outputs.tag }}
+        run: docker save "$IMAGE:$IMAGE_TAG" -o image.tar
+
+      - name: Upload container image
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-${{ steps.meta.outputs.tag }}
+          path: |
+            image.tar
+            image-id.txt
+          if-no-files-found: error
 
   deploy-staging:
+    name: Deploy to Staging
     needs: build-image
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     environment: staging
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
-      - uses: actions/download-artifact@v4
-        with: { name: image-${{ needs.build-image.outputs.tag }} }
-      - run: docker load -i image.tar
-      - name: Back up staging data before the upgrade (needed for rollback)
+        with:
+          python-version: "3.12"
+
+      - name: Download container image
+        uses: actions/download-artifact@v4
+        with:
+          name: image-${{ needs.build-image.outputs.tag }}
+
+      - name: Load container image
+        run: docker load -i image.tar
+
+      - name: Back up staging data before upgrade
         run: |
           if docker volume inspect campus-platform_staging-data >/dev/null 2>&1; then
-            docker run --rm -v campus-platform_staging-data:/data -v "$PWD":/backup alpine cp /data/campus.db /backup/pre-upgrade.db
-          else echo "no existing staging data"; fi
+            docker run --rm \
+              -v campus-platform_staging-data:/data \
+              -v "$PWD":/backup \
+              alpine sh -c '
+                if [ -f /data/campus.db ]; then
+                  cp /data/campus.db /backup/pre-upgrade.db
+                else
+                  echo "No existing database found"
+                fi
+              '
+          else
+            echo "No existing staging data"
+          fi
+
       - name: Deploy to isolated staging
         env:
           IMAGE_TAG: ${{ needs.build-image.outputs.tag }}
           APP_VERSION: ${{ needs.build-image.outputs.tag }}
-          CAMPUS_SYNC_TOKEN: ${{ secrets.CAMPUS_SYNC_TOKEN }}   # secret never committed
+          CAMPUS_SYNC_TOKEN: ${{ secrets.CAMPUS_SYNC_TOKEN }}
         run: docker compose -f docker-compose.staging.yml up -d
+
+      - name: Wait for staging health check
+        run: |
+          HEALTHY=0
+
+          for i in $(seq 1 15); do
+            if curl -fsS http://localhost:18000/health; then
+              HEALTHY=1
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$HEALTHY" -ne 1 ]; then
+            echo "Staging health check failed"
+            exit 1
+          fi
+
       - name: Post-deployment smoke checks
         run: |
-          for i in $(seq 1 15); do curl -fs localhost:18000/health && break || sleep 2; done
-          python scripts/smoke.py http://localhost:18000 ${{ needs.build-image.outputs.tag }}
-      - name: Roll back on failure (remove failed stack; restore pre-upgrade data if it exists)
+          python scripts/smoke.py \
+            http://localhost:18000 \
+            "${{ needs.build-image.outputs.tag }}"
+
+      - name: Roll back on failure
         if: failure()
         run: |
-          docker compose -f docker-compose.staging.yml down -v
-          if [ -f pre-upgrade.db ]; then echo "pre-upgrade.db retained as the recovery copy"; fi
+          echo "Deployment failed. Rolling back staging..."
+
+          # Stop the failed stack without deleting persistent volumes.
+          docker compose -f docker-compose.staging.yml down || true
+
+          # Restore the previous database if a backup exists.
+          if [ -f pre-upgrade.db ]; then
+            docker run --rm \
+              -v campus-platform_staging-data:/data \
+              -v "$PWD":/backup \
+              alpine sh -c \
+              'cp /backup/pre-upgrade.db /data/campus.db'
+
+            echo "Previous staging database restored"
+          else
+            echo "No previous database backup available"
+          fi
