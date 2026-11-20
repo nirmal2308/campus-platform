@@ -1,0 +1,25 @@
+$ python scripts/load_test.py http://127.0.0.1:18000 /tmp/stg/campus.db   # gunicorn --preload -w 2, SQLite WAL, 1 CPU core(s)
+{
+  "requests_total": 320,
+  "wall_seconds": 0.67,
+  "throughput_rps": 475.0,
+  "phaseA_book_codes": {
+    "201": 150
+  },
+  "phaseA_read_codes": {
+    "200": 150
+  },
+  "phaseB_race_codes": {
+    "409": 19,
+    "201": 1
+  },
+  "latency_ms": {
+    "min": 6.8,
+    "p50": 18.9,
+    "p95": 27.1,
+    "p99": 43.7,
+    "max": 104.6
+  },
+  "stored_bookings": 151,
+  "overlapping_pairs_in_db": 0
+}

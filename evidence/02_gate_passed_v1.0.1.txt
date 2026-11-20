@@ -1,0 +1,15 @@
+$ ./scripts/gate.sh        # commit fdfec1f (tag v1.0.1)
+=== GATE 1: unit + integration + regression tests, coverage >= 90% ===
+================================ tests coverage ================================
+app/__init__.py        2      0   100%
+app/api.py           230     12    95%   50-52, 57, 62, 123-125, 146, 279-281
+app/bootstrap.py      12     12     0%   3-19
+app/db.py             31      4    87%   30, 34-36
+app/rules.py          46      1    98%   57
+app/seed.py            7      0   100%
+app/sync.py           30      0   100%
+TOTAL                358     29    92%
+82 passed in 1.83s
+=== GATE 2: static security scan (bandit, medium+ severity) ===
+=== GATE 3: no secrets committed ===
+>>> ALL GATES PASSED - release may proceed to build

@@ -1,6 +1,7 @@
 """Bounded load experiment against a running instance.
 Usage: python scripts/load_test.py BASE_URL DB_PATH OUT_JSON"""
 import json
+from collections import Counter
 import sqlite3
 import statistics
 import sys
@@ -23,10 +24,10 @@ def timed(fn, *a):
 
 
 def book(i):
-    # distinct 1-hour slots over days/facilities -> no intentional conflicts
-    day = datetime(2027, 1, 1) + timedelta(days=i // 40)
-    start = day + timedelta(hours=8 + (i % 10))
-    fid = 1 + (i // 10) % 4 if (1 + (i // 10) % 4) != 3 else 1
+    # every (day, facility, hour) combination is unique -> phase A has NO intended conflicts
+    day = datetime(2027, 1, 1) + timedelta(days=i // 30)
+    start = day + timedelta(hours=8 + i % 10)
+    fid = [1, 2, 4][(i // 10) % 3]
     body = {"facility_id": fid, "start": start.isoformat(), "end": (start + timedelta(hours=1)).isoformat()}
     return timed(lambda: requests.post(f"{BASE}/api/bookings", json=body, headers=H, timeout=30)).status_code
 
@@ -58,10 +59,9 @@ pct = lambda p: lat[min(len(lat) - 1, int(len(lat) * p))]
 res = {
     "requests_total": len(lat), "wall_seconds": round(wall, 2),
     "throughput_rps": round(len(lat) / wall, 1),
-    "phaseA_book_201": book_codes.count(201), "phaseA_book_other": len(book_codes) - book_codes.count(201),
-    "phaseA_read_200": read_codes.count(200),
-    "phaseB_race_201": race_codes.count(201), "phaseB_race_409": race_codes.count(409),
-    "phaseB_race_other": len(race_codes) - race_codes.count(201) - race_codes.count(409),
+    "phaseA_book_codes": dict(Counter(book_codes)),
+    "phaseA_read_codes": dict(Counter(read_codes)),
+    "phaseB_race_codes": dict(Counter(race_codes)),
     "latency_ms": {"min": round(lat[0], 1), "p50": round(statistics.median(lat), 1), "p95": round(pct(.95), 1),
                    "p99": round(pct(.99), 1), "max": round(lat[-1], 1)},
     "stored_bookings": len(rows), "overlapping_pairs_in_db": overlaps,
